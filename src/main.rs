@@ -1,4 +1,4 @@
-use std::{io, option::Option, thread, time};
+use std::{env, io, option::Option, thread, time};
 
 use windows::Media::{
     Core::MediaSource,
@@ -54,7 +54,23 @@ impl Speaker {
 }
 
 fn main() {
-    let text = "Hello World";
+    let args: Vec<String> = env::args().collect();
+
+    let mut text = String::new();
+    if args.len() > 1 {
+        text = args[1].clone();
+    } else {
+        io::stdin().read_line(&mut text).unwrap_or_else(|error| {
+            panic!("Error reading stdin {error:?}.");
+        });
+    }
+
+    if text.is_empty() {
+        println!("No text to say.");
+        return;
+    } else {
+        println!("Saying: {text}");
+    }
 
     let speaker = Speaker::new().unwrap_or_else(|error| {
         panic!("Error making speaker {error:?}.");
