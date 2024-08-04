@@ -1,9 +1,12 @@
 use std::{env, io, thread, time};
 
-use windows::Media::{
-    Core::MediaSource,
-    Playback::{MediaPlayer, MediaPlayerAudioCategory},
-    SpeechSynthesis::{SpeechSynthesizer, VoiceInformation},
+use windows::{
+    Foundation::TypedEventHandler,
+    Media::{
+        Core::MediaSource,
+        Playback::{MediaPlayer, MediaPlayerAudioCategory},
+        SpeechSynthesis::{SpeechSynthesizer, VoiceInformation},
+    },
 };
 
 pub struct Speaker {
@@ -14,6 +17,8 @@ pub struct Speaker {
     volume: f32,
     voice: VoiceInformation,
 }
+
+static mut IS_PLAYING: bool = false;
 
 impl Speaker {
     fn new() -> Result<Self, io::Error> {
@@ -32,7 +37,7 @@ impl Speaker {
         })
     }
 
-    fn say(&self, text: &str) -> Result<bool, Box<dyn std::error::Error>> {
+    fn say(&mut self, text: &str) -> Result<bool, Box<dyn std::error::Error>> {
         self.synth.Options()?.SetSpeakingRate(self.rate.into())?;
         self.synth.Options()?.SetAudioPitch(self.pitch.into())?;
         self.synth.Options()?.SetAudioVolume(self.volume.into())?;
@@ -46,8 +51,27 @@ impl Speaker {
         let content_type = stream.ContentType()?;
         let source = MediaSource::CreateFromStream(&stream, &content_type)?;
         self.player.SetSource(&source)?;
+        let _ = self.player.MediaEnded(&TypedEventHandler::new(|_, _| {
+            unsafe {
+                IS_PLAYING = false;
+            }
+            Ok(())
+        }));
 
+        unsafe {
+            IS_PLAYING = true;
+        }
         let _ = self.player.Play()?;
+
+        unsafe {
+            loop {
+                if !IS_PLAYING {
+                    break;
+                }
+                let time = time::Duration::from_millis(10);
+                thread::sleep(time);
+            }
+        }
 
         Ok(true)
     }
@@ -72,7 +96,7 @@ fn main() {
         println!("Saying: {text}");
     }
 
-    let speaker = Speaker::new().unwrap_or_else(|error| {
+    let mut speaker = Speaker::new().unwrap_or_else(|error| {
         panic!("Error instantiating speaker {error:?}.");
     });
 
@@ -82,7 +106,4 @@ fn main() {
             panic!(".say({text:?}) {error:?}");
         }
     }
-
-    let time = time::Duration::from_secs(10);
-    thread::sleep(time);
 }
