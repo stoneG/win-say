@@ -1,6 +1,6 @@
 # win-say
 
-win-say is a compact Windows implementation of the MacOS [`say`](https://ss64.com/mac/say.html) command.
+win-say is a compact Rust implementation of the MacOS [`say`](https://ss64.com/mac/say.html) command for Windows OS.
 
 https://github.com/user-attachments/assets/b776fc05-5c86-4f73-9758-8fe0fd0f3240
 
