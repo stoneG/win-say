@@ -1,4 +1,4 @@
-use std::{env, io, option::Option, thread, time};
+use std::{env, io, thread, time};
 
 use windows::Media::{
     Core::MediaSource,
@@ -32,7 +32,7 @@ impl Speaker {
         })
     }
 
-    fn say(&self, text: &str) -> Result<Option<bool>, io::Error> {
+    fn say(&self, text: &str) -> Result<bool, Box<dyn std::error::Error>> {
         self.synth.Options()?.SetSpeakingRate(self.rate.into())?;
         self.synth.Options()?.SetAudioPitch(self.pitch.into())?;
         self.synth.Options()?.SetAudioVolume(self.volume.into())?;
@@ -49,7 +49,7 @@ impl Speaker {
 
         let _ = self.player.Play()?;
 
-        Ok(Some(true))
+        Ok(true)
     }
 }
 
@@ -73,13 +73,13 @@ fn main() {
     }
 
     let speaker = Speaker::new().unwrap_or_else(|error| {
-        panic!("Error making speaker {error:?}.");
+        panic!("Error instantiating speaker {error:?}.");
     });
 
     match speaker.say(&text) {
         Ok(_) => {}
         Err(error) => {
-            panic!("Error saying {text:?} {error:?}");
+            panic!(".say({text:?}) {error:?}");
         }
     }
 
